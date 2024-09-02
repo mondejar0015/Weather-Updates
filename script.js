@@ -1,57 +1,112 @@
-document.addEventListener("DOMContentLoaded", async function () {
-    const apiKey = "ce7115ea75e84213998121625242408";
-    let cityName = "Cagayan De Oro";
-  
-    async function fetchWeather(city) {
-      document.getElementById("weather-info").innerHTML =
-        "<p>Loading weather data...</p>"; // Display loading message
-  
-      const apiEndpoint =
-        "https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}";
-  
-      try {
-        const response = await fetch(apiEndpoint);
-        if (!response.ok) throw new Error("City not found");
-        const weatherData = await response.json();
-        console.log(weatherData);
-        const temperatureInCelsius = weatherData.current.temp_c;
-        const weatherDescription = weatherData.current.condition.text;
-        const humidityLevel = weatherData.current.humidity;
-  
-        document.getElementById("weather-info").innerHTML = `
-                  <h2>Weather in ${city}</h2>
-                  <p><strong>Temperature:</strong> ${temperatureInCelsius}°C</p>
-                  <p><strong>Weather:</strong> ${weatherDescription}</p>
-                  <p><strong>Humidity:</strong> ${humidityLevel}%</p>
-              `;
-      } catch (error) {
-        document.getElementById("weather-info").innerHTML = (
-          <p>Unable to retrieve weather data: ${error.message}</p>
-        );
-      }
+const apiKey = "af97bc9cb67d4730a0f61239241908";
+
+async function getWeather() {
+  const cityName = document.getElementById("city").value;
+  if (!cityName) {
+    alert("Please enter a city name.");
+    return;
+  }
+
+  const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${cityName}&days=7`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error) {
+      alert(data.error.message);
+      return;
     }
-    fetchWeather(cityName);
-  
-    document.getElementById("search-btn").addEventListener("click", function () {
-      cityName = document.getElementById("city-input").value.trim();
-      if (cityName) {
-        fetchWeather(cityName);
-      } else {
-        alert("Please enter a city name.");
-      }
+
+    updateWeatherInfo(data);
+  } catch (error) {
+    console.error("Unable to retrieve weather data:", error);
+  }
+}
+
+function updateWeatherInfo(data) {
+  const current = data.current;
+  const forecast = data.forecast.forecastday;
+
+  const tempDiv = document.getElementById("temp-div");
+  tempDiv.innerHTML = `<p>${current.temp_c}°C</p>`;
+
+  const weatherIcon = document.getElementById("weather-icon");
+  const iconUrl = `https:${current.condition.icon}`;
+  weatherIcon.src = iconUrl;
+
+  weatherIcon.onload = () => {
+    weatherIcon.style.display = "block";
+  };
+  weatherIcon.onerror = () => {
+    weatherIcon.style.display = "none";
+    console.error("Failed to load weather icon:", iconUrl);
+  };
+
+  document.getElementById("weather-info").innerText = current.condition.text;
+
+  const hourlyForecast = forecast[0].hour;
+  const hourlyForecastDiv = document.getElementById("hourly-forecast");
+  if (hourlyForecastDiv) {
+    z;
+    hourlyForecastDiv.innerHTML = "";
+    hourlyForecast.forEach((hour) => {
+      const hourItem = document.createElement("div");
+      hourItem.className = "hourly-item";
+
+      const time = document.createElement("p");
+      time.innerText = hour.time.split(" ")[1];
+      hourItem.appendChild(time);
+
+      const icon = document.createElement("img");
+      icon.src = `https:${hour.condition.icon}`;
+      icon.alt = hour.condition.text;
+      icon.onload = () => {
+        icon.style.display = "block";
+      };
+      icon.onerror = () => {
+        icon.style.display = "none";
+        console.error("Failed to load hourly icon:", icon.src);
+      };
+      hourItem.appendChild(icon);
+
+      const temp = document.createElement("p");
+      temp.innerText = `${hour.temp_c}°C`;
+      hourItem.appendChild(temp);
+
+      hourlyForecastDiv.appendChild(hourItem);
     });
-  
-    document
-      .getElementById("city-input")
-      .addEventListener("keypress", function (e) {
-        if (e.key === "Enter") {
-          cityName = document.getElementById("city-input").value.trim();
-          if (cityName) {
-            fetchWeather(cityName);
-          } else {
-            alert("Please enter a city name.");
-          }
-        }
-      });
+  }
+
+  const sevenDayForecast = document.getElementById("seven-day-forecast");
+  sevenDayForecast.innerHTML = "";
+
+  forecast.forEach((day) => {
+    const dayItem = document.createElement("div");
+    dayItem.className = "day-item";
+
+    const dayDate = new Date(day.date);
+    const dateStr = `${dayDate.getDate()}/${dayDate.getMonth() + 1}`;
+    const dateElem = document.createElement("p");
+    dateElem.innerText = dateStr;
+    dayItem.appendChild(dateElem);
+
+    const icon = document.createElement("img");
+    icon.src = `https:${day.day.condition.icon}`;
+    icon.alt = day.day.condition.text;
+    icon.onload = () => {
+      icon.style.display = "block";
+    };
+    icon.onerror = () => {
+      icon.style.display = "none";
+      console.error("Failed to load daily icon:", icon.src);
+    };
+    dayItem.appendChild(icon);
+
+    const temp = document.createElement("p");
+    temp.innerText = `${day.day.avgtemp_c}°C`;
+    dayItem.appendChild(temp);
+
+    sevenDayForecast.appendChild(dayItem);
   });
-  
+}
